@@ -41,7 +41,7 @@ def negative_log_predictive_density(y_hat, cov, y):
     with torch.no_grad():
         y_hat, y = y_hat.reshape(-1), y.reshape(-1)
         rv = multivariate_normal(mean=y_hat, cov=cov)
-        return -rv.logpdf(y_hat).item()
+        return -rv.logpdf(y).item()
 
 
 def average_coverage_error(y_hat, y_hat_std, y):
@@ -73,7 +73,7 @@ def average_coverage_error(y_hat, y_hat_std, y):
             z_score = norm.ppf((1 + confidence_level) / 2)
             upper_lim = y_hat + z_score * y_hat_std
             lower_lim = y_hat - z_score * y_hat_std
-            fraction = ((y_hat <= upper_lim) * (y_hat >= lower_lim)).mean()
+            fraction = ((y <= upper_lim) * (y >= lower_lim)).mean()
             coverage_error += torch.abs(confidence_level - fraction).item()
 
         return coverage_error / len(confidence_levels)
