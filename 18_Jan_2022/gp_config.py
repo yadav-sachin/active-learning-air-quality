@@ -13,8 +13,8 @@ class GPConfig:
     la_noise_lr = 0.1
 
     # Gaussian Parameters
-    gp_lr = 0.001
-    gp_n_epochs = 1000
+    gp_lr = 0.01
+    gp_n_epochs = 220  # after early-stopping
 
     init_random_seed = 43593475
     torch_model_manual_seed = 5498597

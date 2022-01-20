@@ -23,7 +23,7 @@ def mean_standardized_log_loss(y_hat, y_hat_var, y):
     Note: Make sure to include noise variance in the y_hat_var.
     """
     with torch.no_grad():
-        y, y_hat, y_hat_var = y.reshape(-1), y_hat.reshape(-1)
+        y, y_hat = y.reshape(-1), y_hat.reshape(-1)
         y_hat_var = y_hat_var.reshape(-1)
 
         term1 = torch.log(2 * torch.pi * y_hat_var)
@@ -73,7 +73,7 @@ def average_coverage_error(y_hat, y_hat_std, y):
             z_score = norm.ppf((1 + confidence_level) / 2)
             upper_lim = y_hat + z_score * y_hat_std
             lower_lim = y_hat - z_score * y_hat_std
-            fraction = ((y <= upper_lim) * (y >= lower_lim)).mean()
+            fraction = torch.sum((y <= upper_lim) * (y >= lower_lim)) / len(y)
             coverage_error += torch.abs(confidence_level - fraction).item()
 
         return coverage_error / len(confidence_levels)
