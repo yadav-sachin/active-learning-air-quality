@@ -1,11 +1,11 @@
 import gpytorch
 
 
-class ExactGPModel(gpytorch.models.ExactGP):
-    def __init__(self, train_x, train_y, likelihood):
+class ExactGPModel(gpytorch.models.ExactGP,):
+    def __init__(self, train_x, train_y, likelihood, covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())):
         super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
         self.mean_module = gpytorch.means.ConstantMean()
-        self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
+        self.covar_module = covar_module
 
     def forward(self, x):
         mean_x = self.mean_module(x)
