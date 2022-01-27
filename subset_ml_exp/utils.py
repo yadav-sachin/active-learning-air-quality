@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import torch
 import numpy as np
+from sklearn.cluster import kmeans_plusplus
 
 plt.style.use("seaborn")
 from sklearn.model_selection import train_test_split
@@ -16,9 +17,41 @@ def split_stations_random(stations, n_train, n_test, random_state):
     return map(sorted, (stations_train, stations_test, statitions_pool))
 
 
-def split_stations(stations, n_train=6, n_test=6, strategy="random", random_state=42):
+def euclidean_distance(p1, p2):
+    return np.sum(np.square(p1 - p2))
+
+
+def split_stations_d2(stations_df, n_train, n_test, random_state):
+    stations_coordinates = stations_df[["latitude", "longtitude"]].values
+    _, row_indices = kmeans_plusplus(
+        stations_coordinates, n_clusters=n_test, random_state=random_state
+    )
+    stations_test = list(stations_df.iloc[row_indices].index)
+    stations_train_full = [
+        s_id for s_id in stations_df.index if s_id not in stations_test
+    ]
+    stations_train, statitions_pool = train_test_split(
+        stations_train_full, train_size=n_train, random_state=random_state
+    )
+    return map(sorted, (stations_train, stations_test, statitions_pool))
+
+
+def split_stations_lhs(stations, n_train, n_test, random_state):
+    pass
+
+
+def split_stations(
+    stations_df, n_train=6, n_test=6, strategy="random", random_state=42
+):
+    assert len(stations_df) >= (n_train + n_test)
     if strategy == "random":
-        return split_stations_random(stations, n_train, n_test, random_state)
+        return split_stations_random(
+            list(stations_df.index), n_train, n_test, random_state
+        )
+    if strategy == "d2":
+        return split_stations_d2(stations_df, n_train, n_test, random_state)
+    # else:
+    #     return split_stations_lhs(stations, n_train, n_test, random_state)
 
 
 def plot_stations(
