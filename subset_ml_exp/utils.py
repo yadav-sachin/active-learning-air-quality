@@ -1,27 +1,50 @@
 import matplotlib.pyplot as plt
 
 plt.style.use("seaborn")
+from sklearn.model_selection import train_test_split
 
 
-def plot_stations(train_stations_df, test_stations_df, pool_stations_df, fig_title):
+def split_stations_random(stations, n_train, n_test, random_state):
+    stations_train_full, stations_test = train_test_split(
+        stations, test_size=n_test, random_state=random_state
+    )
+    stations_train, statitions_pool = train_test_split(
+        stations_train_full, train_size=n_train, random_state=random_state
+    )
+    return map(sorted, (stations_train, stations_test, statitions_pool))
+
+
+def split_stations(stations, n_train=6, n_test=6, strategy="random", random_state=42):
+    if strategy == "random":
+        return split_stations_random(stations, n_train, n_test, random_state)
+
+
+def plot_stations(
+    train_stations,
+    test_stations,
+    pool_stations,
+    stations_df,
+    fig_title,
+    strategy="random",
+):
     ax = plt.subplot(111)
     ax.scatter(
-        train_stations_df["longtitude"],
-        train_stations_df["latitude"],
+        stations_df.loc[train_stations]["longtitude"],
+        stations_df.loc[train_stations]["latitude"],
         marker="d",
         color="k",
         label="train",
     )
     ax.scatter(
-        test_stations_df["longtitude"],
-        test_stations_df["latitude"],
+        stations_df.loc[test_stations]["longtitude"],
+        stations_df.loc[test_stations]["latitude"],
         marker="o",
         color="r",
-        label="test, random sampling",
+        label=f"test, {strategy} sampling",
     )
     ax.scatter(
-        pool_stations_df["longtitude"],
-        pool_stations_df["latitude"],
+        stations_df.loc[pool_stations]["longtitude"],
+        stations_df.loc[pool_stations]["latitude"],
         marker="*",
         color="g",
         label="pool",
