@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import torch
 import numpy as np
 from sklearn.cluster import kmeans_plusplus
+from scipy.stats import qmc
 
 plt.style.use("seaborn")
 from sklearn.model_selection import train_test_split
@@ -15,10 +16,6 @@ def split_stations_random(stations, n_train, n_test, random_state):
         stations_train_full, train_size=n_train, random_state=random_state
     )
     return map(sorted, (stations_train, stations_test, statitions_pool))
-
-
-def euclidean_distance(p1, p2):
-    return np.sum(np.square(p1 - p2))
 
 
 def split_stations_d2(stations_df, n_train, n_test, random_state):
@@ -36,8 +33,32 @@ def split_stations_d2(stations_df, n_train, n_test, random_state):
     return map(sorted, (stations_train, stations_test, statitions_pool))
 
 
-def split_stations_lhs(stations, n_train, n_test, random_state):
-    pass
+def split_stations_lhs(stations_df, n_train, n_test, random_state):
+    stations_coordinates = stations_df[["latitude", "longtitude"]].values
+    l_bounds = np.min(stations_coordinates, axis = 0)
+    u_bounds = np.max(stations_coordinates, axis = 0)
+
+    lhs_sampler = qmc.LatinHypercube(d = 2, centered=False, seed = random_state)
+    lhs_samples = lhs_sampler.random(n = n_test)
+    lhs_samples = qmc.scale(lhs_samples, l_bounds, u_bounds)
+
+    stations_test = []
+    for add_iter in range(n_test):
+        nearest_station_id, nearest_station_dist = 0, np.inf
+        for station_id in stations_df.index.unique():
+            if station_id in stations_test:
+                continue
+            station_coordinates = stations_df.loc[station_id][["latitude", "longtitude"]].values
+            dist = np.sum(np.square(lhs_samples[add_iter] - station_coordinates))
+            if dist < nearest_station_dist:
+                nearest_station_id, nearest_station_dist = station_id, dist
+        stations_test.append(nearest_station_id)
+    
+    stations_train_full = [s_id for s_id in stations_df.index if s_id not in stations_test]
+    stations_train, statitions_pool = train_test_split(
+        stations_train_full, train_size=n_train, random_state=random_state
+    )
+    return map(sorted, (stations_train, stations_test, statitions_pool))
 
 
 def split_stations(
@@ -50,9 +71,10 @@ def split_stations(
         )
     if strategy == "d2":
         return split_stations_d2(stations_df, n_train, n_test, random_state)
-    # else:
-    #     return split_stations_lhs(stations, n_train, n_test, random_state)
-
+    if strategy == "lhs":
+        return split_stations_lhs(stations_df, n_train, n_test, random_state)
+    else:
+        raise Exception(f"Only available strategies are 'random', 'd2', 'lhs'")
 
 def plot_stations(
     train_stations,
@@ -60,7 +82,7 @@ def plot_stations(
     pool_stations,
     stations_df,
     fig_title,
-    strategy="random",
+    strategy,
     newly_added_station_id=None,
 ):
     ax = plt.subplot(111)

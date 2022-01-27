@@ -5,10 +5,11 @@ import torch
 from gp_model import ExactGPModel, GPConfig
 from utils import To_device, plot_stations, split_stations
 from sklearn.preprocessing import StandardScaler
+from scipy import stats
 
 device = torch.device("cuda:0")
 to_device = To_device(device)
-test_center_strategy = "lhs"
+test_center_strategy = "d2"
 
 random_seeds = [7593, 75942, 47927, 954, 57492, 5742, 75497, 75375, 2321, 21]
 
@@ -48,8 +49,8 @@ for random_seed in random_seeds:
         beijing_stations_test,
         beijing_stations_pool,
         beijing_stations_df,
-        f"Beijing_Dataset_0_Random Sampling_{test_center_strategy}_{random_seed}",
-        strategy=test_center_strategy,
+        f"Beijing Dataset 0 + Uncertainty Sampling + {test_center_strategy} + {random_seed}",
+        strategy="random",
     )
 
     # 24 observations by each station in each day
@@ -98,6 +99,7 @@ for random_seed in random_seeds:
         lat_long_scaler.fit(current_data_train_df[["latitude", "longtitude"]].values)
         pm25_scaler.fit(current_data_train_df[["PM25_AQI_value"]].values)
 
+        recommended_pool_station_ids = []
         rmse_timestamp_values = []
         for current_timestamp in current_data_df.index.unique():
             train_x = current_data_train_df.loc[
@@ -167,17 +169,16 @@ for random_seed in random_seeds:
                 pred_y = pm25_scaler.transform(pred_y.cpu().reshape(-1, 1))
 
                 # assert(test_y.shape == pred_y.shape)
-                rmse_timestamp_values += [
-                    np.sqrt(
-                        np.mean(
-                            (pred_y.reshape(-1) - test_y.cpu().numpy().reshape(-1)) ** 2
-                        )
-                    )
-                ]
+                rmse_timestamp_values += [np.sqrt(np.mean((pred_y.reshape(-1) - test_y.cpu().numpy().reshape(-1))**2))]
 
                 pred_var_pool = gp_model(pool_x).variance.cpu().detach().numpy()
 
-        chosen_pool_station_id = np.random.choice(beijing_stations_pool)
+            recommended_pool_station_id = beijing_stations_pool[
+                np.argmax(pred_var_pool)
+            ]
+            recommended_pool_station_ids.append(recommended_pool_station_id)
+
+        chosen_pool_station_id = stats.mode(recommended_pool_station_ids)[0][0]
         chosen_pool_station_ids.append(chosen_pool_station_id)
 
         beijing_stations_train.append(chosen_pool_station_id)
@@ -190,8 +191,7 @@ for random_seed in random_seeds:
             beijing_stations_test,
             beijing_stations_pool,
             beijing_stations_df,
-            f"Beijing_Dataset_{active_it + 1}_Random_Sampling"
-            + f"_{test_center_strategy}_{random_seed}",
+            f"Beijing Dataset {active_it + 1} + Uncertainty Sampling + {test_center_strategy} + {random_seed}",
             strategy=test_center_strategy,
             newly_added_station_id=chosen_pool_station_id,
         )
