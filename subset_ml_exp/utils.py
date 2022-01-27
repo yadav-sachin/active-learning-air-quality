@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import torch
+import numpy as np
 
 plt.style.use("seaborn")
 from sklearn.model_selection import train_test_split
@@ -26,8 +28,27 @@ def plot_stations(
     stations_df,
     fig_title,
     strategy="random",
+    newly_added_station_id=None,
 ):
     ax = plt.subplot(111)
+    if newly_added_station_id:
+        ax.scatter(
+            stations_df.loc[
+                [
+                    newly_added_station_id,
+                ]
+            ]["longtitude"],
+            stations_df.loc[
+                [
+                    newly_added_station_id,
+                ]
+            ]["latitude"],
+            marker="P",
+            color="y",
+            label="new train",
+        )
+        train_stations = train_stations.copy()
+        train_stations.remove(newly_added_station_id)
     ax.scatter(
         stations_df.loc[train_stations]["longtitude"],
         stations_df.loc[train_stations]["latitude"],
@@ -49,6 +70,7 @@ def plot_stations(
         color="g",
         label="pool",
     )
+
     # Reference: https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot
     # Shrink current axis by 20%
     box = ax.get_position()
@@ -60,3 +82,17 @@ def plot_stations(
     ax.set_ylabel("Latitude")
     ax.set_title(fig_title)
     plt.savefig(f"./assets/figs/{fig_title}.png")
+    # Reference:
+    # https://stackoverflow.com/questions/741877/how-do-i-tell-matplotlib-that-i-am-done-with-a-plot
+    plt.close()
+
+
+def To_device(device):
+    def to_device(input, device=device):
+        if isinstance(input, (tuple, list)):
+            return [to_device(x) for x in input]
+        if type(input) == np.ndarray:
+            input = torch.tensor(input)
+        return input.to(device, non_blocking=True)
+
+    return to_device
