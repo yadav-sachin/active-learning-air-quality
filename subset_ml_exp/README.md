@@ -51,3 +51,4 @@
 <img src="assets/figs/Beijing_Dataset_11_Uncertainty_Sampling_d2_7593.png" width="600px">
 
 ### Results
+![](./logs/beijing_rmse.png)

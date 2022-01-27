@@ -141,6 +141,8 @@ for random_seed in random_seeds:
             gp_optimizer = torch.optim.Adam(gp_model.parameters(), lr=GPConfig.lr)
             mll = gpytorch.mlls.ExactMarginalLogLikelihood(likelihood, gp_model)
 
+            # gp_model.covar_module(test_x, )
+
             for i in range(GPConfig.n_train_iter):
                 gp_optimizer.zero_grad()
                 output = gp_model(train_x)
@@ -169,7 +171,13 @@ for random_seed in random_seeds:
                 pred_y = pm25_scaler.transform(pred_y.cpu().reshape(-1, 1))
 
                 # assert(test_y.shape == pred_y.shape)
-                rmse_timestamp_values += [np.sqrt(np.mean((pred_y.reshape(-1) - test_y.cpu().numpy().reshape(-1))**2))]
+                rmse_timestamp_values += [
+                    np.sqrt(
+                        np.mean(
+                            (pred_y.reshape(-1) - test_y.cpu().numpy().reshape(-1)) ** 2
+                        )
+                    )
+                ]
 
                 pred_var_pool = gp_model(pool_x).variance.cpu().detach().numpy()
 

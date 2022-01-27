@@ -6,13 +6,15 @@ from gp_model import ExactGPModel, GPConfig
 from utils import To_device, plot_stations, split_stations
 from sklearn.preprocessing import StandardScaler
 from scipy import stats
+import matplotlib.pyplot as plt
 
 device = torch.device("cuda:0")
 to_device = To_device(device)
 test_center_strategy = "lhs"
 
-random_seeds = [7593, 75942, 47927, 954, 57492, 5742, 75497, 75375, 2321, 21]
+random_seeds = [7593, 75942, 47927, 954, 57492, 5742]
 
+rmse_final_values = []
 for random_seed in random_seeds:
     np.random.seed(random_seed)
     print(f"::Random Seed :: {random_seed}")
@@ -49,7 +51,7 @@ for random_seed in random_seeds:
         beijing_stations_test,
         beijing_stations_pool,
         beijing_stations_df,
-        f"Beijing Dataset 0 + Uncertainty Sampling + {test_center_strategy} + {random_seed}",
+        f"Beijing_Dataset_0_Uncertainty_Sampling_{test_center_strategy}_{random_seed}",
         strategy=test_center_strategy,
     )
 
@@ -140,6 +142,7 @@ for random_seed in random_seeds:
 
             gp_optimizer = torch.optim.Adam(gp_model.parameters(), lr=GPConfig.lr)
             mll = gpytorch.mlls.ExactMarginalLogLikelihood(likelihood, gp_model)
+            train_losses = []
 
             for i in range(GPConfig.n_train_iter):
                 gp_optimizer.zero_grad()
@@ -148,7 +151,7 @@ for random_seed in random_seeds:
                 loss.backward()
                 # print(
                 #     (
-                #         "Iter %d/%d - Loss: %.3f   lengthscale0: %.3f"
+                #         "Iter %d/%d - Loss: %.3f   lengthscale0: %.3f   "
                 #         "lengthscale1: %.3f   noise: %.3f"
                 #     )
                 #     % (
@@ -160,7 +163,12 @@ for random_seed in random_seeds:
                 #         gp_model.likelihood.noise.item(),
                 #     )
                 # )
+                train_losses += [loss.item()]
                 gp_optimizer.step()
+
+            # plt.plot(train_losses)
+            # plt.savefig("./assets/plots/train_loss.png")
+            # plt.close()
 
             gp_model.eval()
             likelihood.eval()
@@ -184,6 +192,9 @@ for random_seed in random_seeds:
             ]
             recommended_pool_station_ids.append(recommended_pool_station_id)
 
+        day_rmse_val = np.mean(rmse_timestamp_values)
+        rmse_day_values += [day_rmse_val]
+
         chosen_pool_station_id = stats.mode(recommended_pool_station_ids)[0][0]
         chosen_pool_station_ids.append(chosen_pool_station_id)
 
@@ -197,9 +208,13 @@ for random_seed in random_seeds:
             beijing_stations_test,
             beijing_stations_pool,
             beijing_stations_df,
-            f"Beijing Dataset {active_it + 1} + Uncertainty Sampling +"
-            + f" {test_center_strategy} + {random_seed}",
+            f"Beijing_Dataset_{active_it + 1}_Uncertainty_Sampling"
+            + f"_{test_center_strategy}_{random_seed}",
             strategy=test_center_strategy,
             newly_added_station_id=chosen_pool_station_id,
         )
-        print(active_it + 1)
+        print(active_it + 1, " :: ", day_rmse_val)
+
+    rmse_final_values.append(np.array(rmse_day_values))
+
+print(np.mean(rmse_final_values, axis=0))

@@ -3,7 +3,7 @@ import gpytorch
 
 class GPConfig:
     lr = 0.1
-    n_train_iter = 50
+    n_train_iter = 150
 
 
 class ExactGPModel(gpytorch.models.ExactGP):
@@ -11,7 +11,7 @@ class ExactGPModel(gpytorch.models.ExactGP):
         super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
         self.mean_module = gpytorch.means.ConstantMean()
         self.covar_module = gpytorch.kernels.ScaleKernel(
-            gpytorch.kernels.MaternKernel(ard_num_dims=ard_num_dims)
+            gpytorch.kernels.MaternKernel(nu=1.5, ard_num_dims=ard_num_dims)
         )
 
     def forward(self, x):

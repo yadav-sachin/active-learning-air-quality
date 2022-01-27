@@ -10,8 +10,9 @@ device = torch.device("cuda:0")
 to_device = To_device(device)
 test_center_strategy = "lhs"
 
-random_seeds = [7593, 75942, 47927, 954, 57492, 5742, 75497, 75375, 2321, 21]
+random_seeds = [7593, 75942, 47927, 954, 57492, 5742]
 
+rmse_final_values = []
 for random_seed in random_seeds:
     np.random.seed(random_seed)
     print(f"::Random Seed :: {random_seed}")
@@ -177,6 +178,9 @@ for random_seed in random_seeds:
 
                 pred_var_pool = gp_model(pool_x).variance.cpu().detach().numpy()
 
+        day_rmse_val = np.mean(rmse_timestamp_values)
+        rmse_day_values += [day_rmse_val]
+
         chosen_pool_station_id = np.random.choice(beijing_stations_pool)
         chosen_pool_station_ids.append(chosen_pool_station_id)
 
@@ -195,4 +199,9 @@ for random_seed in random_seeds:
             strategy=test_center_strategy,
             newly_added_station_id=chosen_pool_station_id,
         )
-        print(active_it + 1)
+
+        print(active_it + 1, " :: ", day_rmse_val)
+
+    rmse_final_values.append(np.array(rmse_day_values))
+
+print(np.mean(rmse_final_values, axis=0))
