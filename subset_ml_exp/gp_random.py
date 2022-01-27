@@ -8,7 +8,7 @@ from sklearn.preprocessing import StandardScaler
 
 device = torch.device("cuda:0")
 to_device = To_device(device)
-test_center_strategy = "d2"
+test_center_strategy = "lhs"
 
 random_seeds = [7593, 75942, 47927, 954, 57492, 5742, 75497, 75375, 2321, 21]
 
@@ -49,7 +49,7 @@ for random_seed in random_seeds:
         beijing_stations_pool,
         beijing_stations_df,
         f"Beijing Dataset 0 + Random Sampling + {test_center_strategy} + {random_seed}",
-        strategy="random",
+        strategy=test_center_strategy,
     )
 
     # 24 observations by each station in each day
@@ -191,7 +191,7 @@ for random_seed in random_seeds:
             beijing_stations_pool,
             beijing_stations_df,
             f"Beijing Dataset {active_it + 1} + Random Sampling"
-            + " + {test_center_strategy} + {random_seed}",
+            + f" + {test_center_strategy} + {random_seed}",
             strategy=test_center_strategy,
             newly_added_station_id=chosen_pool_station_id,
         )
